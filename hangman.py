@@ -1,5 +1,8 @@
 import PySimpleGUI as sg
 from string import ascii_uppercase
+from random import choice
+
+MAX_WRONG_GUESSES = 6
 
 
 class Hangman:
@@ -14,6 +17,12 @@ class Hangman:
             finalize=True,
             margins=(100, 100),
         )
+        self._canvas = self._window["-CANVAS-"]
+        self._target_word = str()
+        self._wrong_guesses = int()
+        self._guessed_letters = set()
+        self._guessed_word = str()
+        self._new_game()
 
     def readEvent(self):
         event = self._window.read()
@@ -32,7 +41,7 @@ class Hangman:
             [
                 [
                     sg.Graph(
-                        key="-Canvas-",
+                        key="-CANVAS-",
                         canvas_size=(200, 400),
                         graph_bottom_left=(0, 0),
                         graph_top_right=(200, 400),
@@ -97,13 +106,114 @@ class Hangman:
             font="Any 20",
         )
 
+    def _draw_scaffold(self):
+        lines = [
+            ((40, 55), (180, 55), 10),
+            ((165, 60), (165, 365), 10),
+            ((160, 360), (100, 360), 10),
+            ((100, 365), (100, 330), 10),
+            ((100, 330), (100, 310), 1),
+        ]
+        for *points, width in lines:
+            self._canvas.DrawLine(*points, color="black", width=width)
+
+    def _draw_hanged_man(self):
+        head = (100, 290)
+        torso = [((100, 270), (100, 170))]
+        left_arm = [
+            ((100, 250), (80, 250)),
+            ((80, 250), (60, 210)),
+            ((60, 210), (60, 190)),
+        ]
+        right_arm = [
+            ((100, 250), (120, 250)),
+            ((120, 250), (140, 210)),
+            ((140, 210), (140, 190)),
+        ]
+        left_leg = [
+            ((100, 170), (80, 170)),
+            ((80, 170), (70, 140)),
+            ((70, 140), (70, 80)),
+            ((70, 80), (60, 80)),
+        ]
+        right_leg = [
+            ((100, 170), (120, 170)),
+            ((120, 170), (130, 140)),
+            ((130, 140), (130, 80)),
+            ((130, 80), (140, 80)),
+        ]
+
+        body = [torso, left_arm, right_arm, left_leg, right_leg]
+        if self._wrong_guesses == 1:
+            self._canvas.DrawCircle(head, 20, line_color="red", line_width=2)
+        elif self._wrong_guesses > 1:
+            for part in body[self._wrong_guesses - 2]:
+                self._canvas.DrawLine(*part, color="red", width=2)
+
+    def _select_word(self):
+        with open("resources/words.txt", mode="r", encoding="utf-8") as words:
+            word_list = words.readlines()
+        return choice(word_list).strip().upper()
+
+    def _build_guessed_word(self):
+        current_letters = []
+        for letter in self._target_word:
+            if letter in self._guessed_letters:
+                current_letters.append(letter)
+            else:
+                current_letters.append("_")
+        return " ".join(current_letters)
+
+    def _new_game(self):
+        self._target_word = self._select_word()
+        self._restart_game()
+
+    def _restart_game(self):
+        self._guessed_letters.clear()
+        self._wrong_guesses = 0
+        self._guessed_word = self._build_guessed_word()
+        # Restart GUI
+        self._canvas.erase()
+        self._draw_scaffold()
+        for letter in ascii_uppercase:
+            self._window[f"-letter-{letter}-"].update(disabled=False)
+        self._window["-DISPLAY-WORD-"].update(self._guessed_word)
+
+    def process_event(self, event):
+        if event[:8] == "-letter-":
+            self._play(letter=event[8])
+        elif event == "-RESTART-":
+            self._restart_game()
+        elif event == "-NEW-":
+            self._new_game()
+        elif event == "-QUIT-":
+            self.close()
+
+    def _play(self, letter):
+        if letter not in self._target_word:
+            self._wrong_guesses += 1
+        self._guessed_letters.add(letter)
+        self._guessed_word = self._build_guessed_word()
+        # Update GUI
+        self._window[f"-letter-{letter}-"].update(disabled=True)
+        self._window["-DISPLAY-WORD-"].update(self._guessed_word)
+        self._draw_hanged_man()
+
+    def is_over(self):
+        return any(
+            [
+                self._wrong_guesses == MAX_WRONG_GUESSES,
+                set(self._target_word) <= self._guessed_letters,
+            ]
+        )
+
 
 if __name__ == "__main__":
     game = Hangman()
     # Event loop
-    while True:
+    while not game.is_over():
         event = game.readEvent()
-        if event == sg.WIN_CLOSED:
+        if event in {sg.WIN_CLOSED}:
             break
-
+        game.process_event(event)
     game.close()
