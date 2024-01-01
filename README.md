@@ -4,8 +4,6 @@ coded from Real Python website based on PySimpleGUI
 
 # Improvements
 
-* Create a friendly game-ending
-* Propose to start a new game
 * Count points as long as the game is not closed
 * Create statistics file
 * Allow to erase all statistics

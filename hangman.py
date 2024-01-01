@@ -17,7 +17,7 @@ class Hangman:
             finalize=True,
             margins=(100, 100),
         )
-        self.quit = False
+        self._exited = False
         self._canvas = self._window["-CANVAS-"]
         self._target_word = str()
         self._wrong_guesses = int()
@@ -209,34 +209,40 @@ class Hangman:
         )
 
     def check_winner(self):
-        if not self.quit:
-            if self._wrong_guesses < MAX_WRONG_GUESSES:
-                answer = sg.PopupYesNo(
-                    "You've won! Congratulations!\n" "Another round?", title="Winner"
-                )
-            else:
-                answer = sg.PopupYesNo(
-                    f"You've lost! The word was '{self._target_word}'.\n" "Another round?",
-                    title="Sorry!",
-                )
+        if self._wrong_guesses < MAX_WRONG_GUESSES:
+            answer = sg.PopupYesNo(
+                "You've won! Congratulations!\n" "Another round?", title="Winner"
+            )
+        else:
+            answer = sg.PopupYesNo(
+                f"You've lost! The word was '{self._target_word}'.\n" "Another round?",
+                title="Sorry!",
+            )
 
-            self.quit = answer == "No"
-            # breakpoint()
-        if not self.quit:
+        self._exited = answer == "No"
+        if not self._exited:
             self._new_game()
 
+    def exited(self):
+        game._exited = True
+    
+    def is_exited(self):
+        return game._exited
 
 if __name__ == "__main__":
     game = Hangman()
-    while not game.quit:
-        # Event loop
+    # Game as the window
+    while not game.is_exited():
+        # Game as a round
         while not game.is_over():
             event = game.read_event()
             if event in {sg.WIN_CLOSED, "-QUIT-"}:
-                game.quit = True
+                game.exited()
                 break
             game.process_event(event)
         
-        game.check_winner()
+        # Game is over. Check for another round
+        if not game.is_exited():
+            game.check_winner()
 
     game.close()
