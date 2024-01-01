@@ -23,6 +23,8 @@ class Hangman:
         self._wrong_guesses = int()
         self._guessed_letters = set()
         self._guessed_word = str()
+        self._won_games = int()
+        self._played_games = int()
         self._new_game()
 
     def read_event(self):
@@ -209,13 +211,20 @@ class Hangman:
         )
 
     def check_winner(self):
+        self._played_games += 1
         if self._wrong_guesses < MAX_WRONG_GUESSES:
+            self._won_games += 1
             answer = sg.PopupYesNo(
-                "You've won! Congratulations!\n" "Another round?", title="Winner"
+                f"You've won! Congratulations!\n"
+                f"That's {self._won_games} out of {self._played_games}\n"
+                "Another round?",
+                title="Winner"
             )
         else:
             answer = sg.PopupYesNo(
-                f"You've lost! The word was '{self._target_word}'.\n" "Another round?",
+                f"You've lost! The word was '{self._target_word}'.\n"
+                f"That's {self._won_games} out of {self._played_games}\n"
+                "Another round?",
                 title="Sorry!",
             )
 

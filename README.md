@@ -4,7 +4,6 @@ coded from Real Python website based on PySimpleGUI
 
 # Improvements
 
-* Count points as long as the game is not closed
 * Create statistics file
 * Allow to erase all statistics
 * Print game statistics
