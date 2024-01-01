@@ -17,6 +17,7 @@ class Hangman:
             finalize=True,
             margins=(100, 100),
         )
+        self.quit = False
         self._canvas = self._window["-CANVAS-"]
         self._target_word = str()
         self._wrong_guesses = int()
@@ -24,7 +25,7 @@ class Hangman:
         self._guessed_word = str()
         self._new_game()
 
-    def readEvent(self):
+    def read_event(self):
         event = self._window.read()
         if event is not None:
             event_id = event[0]
@@ -207,13 +208,35 @@ class Hangman:
             ]
         )
 
+    def check_winner(self):
+        if not self.quit:
+            if self._wrong_guesses < MAX_WRONG_GUESSES:
+                answer = sg.PopupYesNo(
+                    "You've won! Congratulations!\n" "Another round?", title="Winner"
+                )
+            else:
+                answer = sg.PopupYesNo(
+                    f"You've lost! The word was '{self._target_word}'.\n" "Another round?",
+                    title="Sorry!",
+                )
+
+            self.quit = answer == "No"
+            # breakpoint()
+        if not self.quit:
+            self._new_game()
+
 
 if __name__ == "__main__":
     game = Hangman()
-    # Event loop
-    while not game.is_over():
-        event = game.readEvent()
-        if event in {sg.WIN_CLOSED}:
-            break
-        game.process_event(event)
+    while not game.quit:
+        # Event loop
+        while not game.is_over():
+            event = game.read_event()
+            if event in {sg.WIN_CLOSED, "-QUIT-"}:
+                game.quit = True
+                break
+            game.process_event(event)
+        
+        game.check_winner()
+
     game.close()
